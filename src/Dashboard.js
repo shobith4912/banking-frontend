@@ -1,0 +1,326 @@
+import React, { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
+
+function Dashboard() {
+  const [amount, setAmount] = useState("");
+  const [receiverAccount, setReceiverAccount] = useState("");
+  const [userId, setUserId] = useState("");
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [accountNumber, setAccountNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // 🔐 Get user ID from token
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.id);
+      }
+    } catch (err) {
+      console.log("Invalid token");
+    }
+  }, []);
+
+  // 📡 Fetch user data
+  const fetchUser = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5001/user/${id}`);
+      const data = await res.json();
+
+      if (data) {
+        setBalance(data.balance || 0);
+        setTransactions(data.transactions || []);
+        setAccountNumber(data.accountNumber || "");
+      }
+    } catch (err) {
+      console.log(err);
+      alert("Failed to load user data");
+    }
+  };
+
+  useEffect(() => {
+    if (userId) fetchUser(userId);
+  }, [userId]);
+
+  // 💰 Deposit
+  const handleDeposit = async () => {
+    if (!amount || Number(amount) <= 0) {
+      alert("Enter valid amount");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await fetch("http://localhost:5001/deposit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: userId, amount: Number(amount) }),
+      });
+
+      const data = await res.json();
+
+      if (data.message) {
+        alert(data.message);
+      } else {
+        setBalance(data.balance);
+        setTransactions(data.transactions);
+      }
+
+      setAmount("");
+    } catch (err) {
+      alert("Deposit failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 💸 Withdraw
+  const handleWithdraw = async () => {
+    if (!amount || Number(amount) <= 0) {
+      alert("Enter valid amount");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await fetch("http://localhost:5001/withdraw", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: userId, amount: Number(amount) }),
+      });
+
+      const data = await res.json();
+
+      if (data.message) {
+        alert(data.message);
+      } else {
+        setBalance(data.balance);
+        setTransactions(data.transactions);
+      }
+
+      setAmount("");
+    } catch (err) {
+      alert("Withdraw failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔁 Transfer
+  const handleTransfer = async () => {
+    if (!receiverAccount || !amount || Number(amount) <= 0) {
+      alert("Enter valid details");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await fetch("http://localhost:5001/transfer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fromId: userId,
+          toAccountNumber: receiverAccount,
+          amount: Number(amount),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.message) {
+        alert(data.message);
+      } else {
+        setBalance(data.balance);
+        setTransactions(data.transactions);
+      }
+
+      setAmount("");
+      setReceiverAccount("");
+    } catch (err) {
+      alert("Transfer failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🚪 Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  };
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h1>🏦 Banking Dashboard</h1>
+
+        {/* Account Number */}
+        <p style={styles.account}>
+          Account No: <strong>{accountNumber}</strong>
+        </p>
+
+        {/* Balance */}
+        <h2 style={styles.balance}>₹ {balance}</h2>
+
+        {/* Amount Input */}
+        <input
+          style={styles.input}
+          placeholder="Enter amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+
+        {/* Deposit / Withdraw */}
+        <div>
+          <button
+            style={styles.deposit}
+            onClick={handleDeposit}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Deposit"}
+          </button>
+
+          <button
+            style={styles.withdraw}
+            onClick={handleWithdraw}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Withdraw"}
+          </button>
+        </div>
+
+        <hr />
+
+        {/* Transfer */}
+        <input
+          style={styles.input}
+          placeholder="Receiver Account Number"
+          value={receiverAccount}
+          onChange={(e) => setReceiverAccount(e.target.value)}
+        />
+
+        <button
+          style={styles.transfer}
+          onClick={handleTransfer}
+          disabled={loading}
+        >
+          {loading ? "Processing..." : "Send Money"}
+        </button>
+
+        <button style={styles.logout} onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
+
+      {/* Transactions */}
+      <div style={styles.transactions}>
+        <h3>Transactions</h3>
+
+        {transactions.length === 0 ? (
+          <p>No transactions yet</p>
+        ) : (
+          transactions.map((t, i) => (
+            <div key={i} style={styles.transactionItem}>
+              <span>{t.type}</span>
+              <span>₹{t.amount}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    display: "flex",
+    justifyContent: "space-around",
+    padding: "50px",
+    background: "linear-gradient(to right, #667eea, #764ba2)",
+    minHeight: "100vh",
+  },
+  card: {
+    background: "#fff",
+    padding: "30px",
+    borderRadius: "12px",
+    boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+    textAlign: "center",
+    width: "320px",
+  },
+  account: {
+    fontSize: "14px",
+    color: "#555",
+  },
+  balance: {
+    color: "green",
+    fontSize: "32px",
+  },
+  input: {
+    padding: "10px",
+    width: "85%",
+    margin: "10px 0",
+    borderRadius: "8px",
+    border: "1px solid #ccc",
+  },
+  deposit: {
+    background: "green",
+    color: "#fff",
+    padding: "10px",
+    margin: "5px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+  withdraw: {
+    background: "red",
+    color: "#fff",
+    padding: "10px",
+    margin: "5px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+  transfer: {
+    background: "#667eea",
+    color: "#fff",
+    padding: "10px",
+    marginTop: "10px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+  logout: {
+    marginTop: "15px",
+    background: "#333",
+    color: "#fff",
+    padding: "8px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+  transactions: {
+    width: "300px",
+  },
+  transactionItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    background: "#fff",
+    padding: "10px",
+    marginBottom: "8px",
+    borderRadius: "6px",
+    boxShadow: "0 0 5px rgba(0,0,0,0.1)",
+  },
+};
+
+export default Dashboard;
