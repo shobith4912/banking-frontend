@@ -3,6 +3,16 @@ import { jwtDecode } from "jwt-decode";
 
 const API_URL = "https://banking-backend-nobi.onrender.com";
 
+// ================= FOOTER =================
+const Footer = () => {
+  return (
+    <div style={footerStyles.container}>
+      <p>Designed & Developed by</p>
+      <strong>Kommaddi Shobith</strong>
+    </div>
+  );
+};
+
 function Dashboard() {
   const [amount, setAmount] = useState("");
   const [receiverAccount, setReceiverAccount] = useState("");
@@ -12,7 +22,7 @@ function Dashboard() {
   const [accountNumber, setAccountNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔐 Get user ID from token
+  // 🔐 Token check
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -24,24 +34,18 @@ function Dashboard() {
 
     try {
       const decoded = jwtDecode(token);
-      console.log("TOKEN:", decoded);
       setUserId(decoded.id);
-    } catch (err) {
-      console.log("Invalid token");
+    } catch {
       localStorage.removeItem("token");
       window.location.href = "/";
     }
   }, []);
 
-  // 📡 Fetch user data
+  // 📡 Fetch user
   const fetchUser = async (id) => {
     try {
-      console.log("Fetching user:", id);
-
       const res = await fetch(`${API_URL}/user/${id}`);
       const data = await res.json();
-
-      console.log("USER DATA:", data);
 
       if (!res.ok) {
         alert(data.message || "Failed to load user");
@@ -52,8 +56,7 @@ function Dashboard() {
       setTransactions(data.transactions || []);
       setAccountNumber(data.accountNumber || "");
 
-    } catch (err) {
-      console.log(err);
+    } catch {
       alert("Failed to load user data");
     }
   };
@@ -64,8 +67,6 @@ function Dashboard() {
 
   // 💰 Deposit
   const handleDeposit = async () => {
-    console.log("Deposit clicked");
-
     if (!amount || Number(amount) <= 0) {
       alert("Enter valid amount");
       return;
@@ -76,14 +77,11 @@ function Dashboard() {
 
       const res = await fetch(`${API_URL}/deposit`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: userId, amount: Number(amount) }),
       });
 
       const data = await res.json();
-      console.log("DEPOSIT RESPONSE:", data);
 
       if (!res.ok) {
         alert(data.message || "Deposit failed");
@@ -94,8 +92,7 @@ function Dashboard() {
       setTransactions(data.transactions);
       setAmount("");
 
-    } catch (err) {
-      console.log(err);
+    } catch {
       alert("Deposit failed");
     } finally {
       setLoading(false);
@@ -104,8 +101,6 @@ function Dashboard() {
 
   // 💸 Withdraw
   const handleWithdraw = async () => {
-    console.log("Withdraw clicked");
-
     if (!amount || Number(amount) <= 0) {
       alert("Enter valid amount");
       return;
@@ -116,14 +111,11 @@ function Dashboard() {
 
       const res = await fetch(`${API_URL}/withdraw`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: userId, amount: Number(amount) }),
       });
 
       const data = await res.json();
-      console.log("WITHDRAW RESPONSE:", data);
 
       if (!res.ok) {
         alert(data.message || "Withdraw failed");
@@ -134,8 +126,7 @@ function Dashboard() {
       setTransactions(data.transactions);
       setAmount("");
 
-    } catch (err) {
-      console.log(err);
+    } catch {
       alert("Withdraw failed");
     } finally {
       setLoading(false);
@@ -144,8 +135,6 @@ function Dashboard() {
 
   // 🔁 Transfer
   const handleTransfer = async () => {
-    console.log("Transfer clicked");
-
     if (!receiverAccount || !amount || Number(amount) <= 0) {
       alert("Enter valid details");
       return;
@@ -156,9 +145,7 @@ function Dashboard() {
 
       const res = await fetch(`${API_URL}/transfer`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fromId: userId,
           toAccountNumber: receiverAccount,
@@ -167,7 +154,6 @@ function Dashboard() {
       });
 
       const data = await res.json();
-      console.log("TRANSFER RESPONSE:", data);
 
       if (!res.ok) {
         alert(data.message || "Transfer failed");
@@ -179,8 +165,7 @@ function Dashboard() {
       setAmount("");
       setReceiverAccount("");
 
-    } catch (err) {
-      console.log(err);
+    } catch {
       alert("Transfer failed");
     } finally {
       setLoading(false);
@@ -194,69 +179,75 @@ function Dashboard() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1>🏦 Banking Dashboard</h1>
+    <>
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <h1>🏦 Banking Dashboard</h1>
 
-        <p style={styles.account}>
-          Account No: <strong>{accountNumber}</strong>
-        </p>
+          <p style={styles.account}>
+            Account No: <strong>{accountNumber}</strong>
+          </p>
 
-        <h2 style={styles.balance}>₹ {balance}</h2>
+          <h2 style={styles.balance}>₹ {balance}</h2>
 
-        <input
-          style={styles.input}
-          placeholder="Enter amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
+          <input
+            style={styles.input}
+            placeholder="Enter amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
 
-        <div>
-          <button style={styles.deposit} onClick={handleDeposit} disabled={loading}>
-            {loading ? "Processing..." : "Deposit"}
+          <div>
+            <button style={styles.deposit} onClick={handleDeposit} disabled={loading}>
+              {loading ? "Processing..." : "Deposit"}
+            </button>
+
+            <button style={styles.withdraw} onClick={handleWithdraw} disabled={loading}>
+              {loading ? "Processing..." : "Withdraw"}
+            </button>
+          </div>
+
+          <hr />
+
+          <input
+            style={styles.input}
+            placeholder="Receiver Account Number"
+            value={receiverAccount}
+            onChange={(e) => setReceiverAccount(e.target.value)}
+          />
+
+          <button style={styles.transfer} onClick={handleTransfer} disabled={loading}>
+            {loading ? "Processing..." : "Send Money"}
           </button>
 
-          <button style={styles.withdraw} onClick={handleWithdraw} disabled={loading}>
-            {loading ? "Processing..." : "Withdraw"}
+          <button style={styles.logout} onClick={handleLogout}>
+            Logout
           </button>
         </div>
 
-        <hr />
+        <div style={styles.transactions}>
+          <h3>Transactions</h3>
 
-        <input
-          style={styles.input}
-          placeholder="Receiver Account Number"
-          value={receiverAccount}
-          onChange={(e) => setReceiverAccount(e.target.value)}
-        />
-
-        <button style={styles.transfer} onClick={handleTransfer} disabled={loading}>
-          {loading ? "Processing..." : "Send Money"}
-        </button>
-
-        <button style={styles.logout} onClick={handleLogout}>
-          Logout
-        </button>
+          {transactions.length === 0 ? (
+            <p>No transactions yet</p>
+          ) : (
+            transactions.map((t, i) => (
+              <div key={i} style={styles.transactionItem}>
+                <span>{t.type}</span>
+                <span>₹{t.amount}</span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      <div style={styles.transactions}>
-        <h3>Transactions</h3>
-
-        {transactions.length === 0 ? (
-          <p>No transactions yet</p>
-        ) : (
-          transactions.map((t, i) => (
-            <div key={i} style={styles.transactionItem}>
-              <span>{t.type}</span>
-              <span>₹{t.amount}</span>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+      {/* 🔥 FOOTER */}
+      <Footer />
+    </>
   );
 }
 
+// ================= STYLES =================
 const styles = {
   container: {
     display: "flex",
@@ -335,6 +326,22 @@ const styles = {
     marginBottom: "8px",
     borderRadius: "6px",
     boxShadow: "0 0 5px rgba(0,0,0,0.1)",
+  },
+};
+
+// ================= FOOTER STYLES =================
+const footerStyles = {
+  container: {
+    position: "fixed",
+    bottom: "10px",
+    right: "15px",
+    textAlign: "right",
+    fontSize: "12px",
+    color: "#fff",
+    background: "rgba(0,0,0,0.6)",
+    padding: "6px 10px",
+    borderRadius: "8px",
+    boxShadow: "0 0 5px rgba(0,0,0,0.2)",
   },
 };
 
