@@ -3,20 +3,22 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-route
 import Dashboard from "./Dashboard";
 import "./styles.css";
 
+// ✅ Backend URL (Render)
+const API_URL = "https://banking-backend-nobi.onrender.com";
+
 // ================= AUTH PAGE =================
 function AuthPage() {
   const navigate = useNavigate();
 
   const [isLogin, setIsLogin] = useState(false);
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const API_URL = "http://localhost:5001";
-
   // ================= REGISTER =================
   const handleRegister = async () => {
+    console.log("🚀 REGISTER CLICKED");
+
     if (!name || !email || !password) {
       alert("All fields are required");
       return;
@@ -31,6 +33,8 @@ function AuthPage() {
         body: JSON.stringify({ name, email, password }),
       });
 
+      console.log("STATUS:", res.status);
+
       const data = await res.json();
       console.log("REGISTER RESPONSE:", data);
 
@@ -39,22 +43,20 @@ function AuthPage() {
         return;
       }
 
-      // ✅ SUCCESS
-      alert(
-        `✅ Account Created Successfully!\n\n🏦 Account Number: ${data.accountNumber}`
-      );
+      alert(`✅ Account Created!\nAccount No: ${data.accountNumber}`);
 
-      // auto switch to login
       setIsLogin(true);
 
     } catch (err) {
-      console.error(err);
+      console.error("REGISTER ERROR:", err);
       alert("Server error while registering");
     }
   };
 
   // ================= LOGIN =================
   const handleLogin = async () => {
+    console.log("🚀 LOGIN CLICKED");
+
     if (!email || !password) {
       alert("Enter email and password");
       return;
@@ -69,6 +71,8 @@ function AuthPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log("STATUS:", res.status);
+
       const data = await res.json();
       console.log("LOGIN RESPONSE:", data);
 
@@ -77,16 +81,13 @@ function AuthPage() {
         return;
       }
 
-      // ✅ store token
       localStorage.setItem("token", data.token);
 
       alert("✅ Login successful");
-
-      // ✅ proper navigation (NO reload)
       navigate("/dashboard");
 
     } catch (err) {
-      console.error(err);
+      console.error("LOGIN ERROR:", err);
       alert("Server error during login");
     }
   };
@@ -120,7 +121,13 @@ function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
 
-            <button style={styles.primaryBtn} onClick={handleLogin}>
+            <button
+              style={styles.primaryBtn}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLogin();
+              }}
+            >
               Login
             </button>
           </>
@@ -147,7 +154,13 @@ function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
 
-            <button style={styles.primaryBtn} onClick={handleRegister}>
+            <button
+              style={styles.primaryBtn}
+              onClick={(e) => {
+                e.preventDefault();
+                handleRegister();
+              }}
+            >
               Register
             </button>
           </>

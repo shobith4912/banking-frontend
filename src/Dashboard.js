@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
+const API_URL = "https://banking-backend-nobi.onrender.com";
+
 function Dashboard() {
   const [amount, setAmount] = useState("");
   const [receiverAccount, setReceiverAccount] = useState("");
@@ -12,28 +14,44 @@ function Dashboard() {
 
   // 🔐 Get user ID from token
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login again");
+      window.location.href = "/";
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const decoded = jwtDecode(token);
-        setUserId(decoded.id);
-      }
+      const decoded = jwtDecode(token);
+      console.log("TOKEN:", decoded);
+      setUserId(decoded.id);
     } catch (err) {
       console.log("Invalid token");
+      localStorage.removeItem("token");
+      window.location.href = "/";
     }
   }, []);
 
   // 📡 Fetch user data
   const fetchUser = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5001/user/${id}`);
+      console.log("Fetching user:", id);
+
+      const res = await fetch(`${API_URL}/user/${id}`);
       const data = await res.json();
 
-      if (data) {
-        setBalance(data.balance || 0);
-        setTransactions(data.transactions || []);
-        setAccountNumber(data.accountNumber || "");
+      console.log("USER DATA:", data);
+
+      if (!res.ok) {
+        alert(data.message || "Failed to load user");
+        return;
       }
+
+      setBalance(data.balance || 0);
+      setTransactions(data.transactions || []);
+      setAccountNumber(data.accountNumber || "");
+
     } catch (err) {
       console.log(err);
       alert("Failed to load user data");
@@ -46,6 +64,8 @@ function Dashboard() {
 
   // 💰 Deposit
   const handleDeposit = async () => {
+    console.log("Deposit clicked");
+
     if (!amount || Number(amount) <= 0) {
       alert("Enter valid amount");
       return;
@@ -54,7 +74,7 @@ function Dashboard() {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:5001/deposit", {
+      const res = await fetch(`${API_URL}/deposit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -63,16 +83,19 @@ function Dashboard() {
       });
 
       const data = await res.json();
+      console.log("DEPOSIT RESPONSE:", data);
 
-      if (data.message) {
-        alert(data.message);
-      } else {
-        setBalance(data.balance);
-        setTransactions(data.transactions);
+      if (!res.ok) {
+        alert(data.message || "Deposit failed");
+        return;
       }
 
+      setBalance(data.balance);
+      setTransactions(data.transactions);
       setAmount("");
+
     } catch (err) {
+      console.log(err);
       alert("Deposit failed");
     } finally {
       setLoading(false);
@@ -81,6 +104,8 @@ function Dashboard() {
 
   // 💸 Withdraw
   const handleWithdraw = async () => {
+    console.log("Withdraw clicked");
+
     if (!amount || Number(amount) <= 0) {
       alert("Enter valid amount");
       return;
@@ -89,7 +114,7 @@ function Dashboard() {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:5001/withdraw", {
+      const res = await fetch(`${API_URL}/withdraw`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -98,16 +123,19 @@ function Dashboard() {
       });
 
       const data = await res.json();
+      console.log("WITHDRAW RESPONSE:", data);
 
-      if (data.message) {
-        alert(data.message);
-      } else {
-        setBalance(data.balance);
-        setTransactions(data.transactions);
+      if (!res.ok) {
+        alert(data.message || "Withdraw failed");
+        return;
       }
 
+      setBalance(data.balance);
+      setTransactions(data.transactions);
       setAmount("");
+
     } catch (err) {
+      console.log(err);
       alert("Withdraw failed");
     } finally {
       setLoading(false);
@@ -116,6 +144,8 @@ function Dashboard() {
 
   // 🔁 Transfer
   const handleTransfer = async () => {
+    console.log("Transfer clicked");
+
     if (!receiverAccount || !amount || Number(amount) <= 0) {
       alert("Enter valid details");
       return;
@@ -124,7 +154,7 @@ function Dashboard() {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:5001/transfer", {
+      const res = await fetch(`${API_URL}/transfer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -137,17 +167,20 @@ function Dashboard() {
       });
 
       const data = await res.json();
+      console.log("TRANSFER RESPONSE:", data);
 
-      if (data.message) {
-        alert(data.message);
-      } else {
-        setBalance(data.balance);
-        setTransactions(data.transactions);
+      if (!res.ok) {
+        alert(data.message || "Transfer failed");
+        return;
       }
 
+      setBalance(data.balance);
+      setTransactions(data.transactions);
       setAmount("");
       setReceiverAccount("");
+
     } catch (err) {
+      console.log(err);
       alert("Transfer failed");
     } finally {
       setLoading(false);
@@ -165,15 +198,12 @@ function Dashboard() {
       <div style={styles.card}>
         <h1>🏦 Banking Dashboard</h1>
 
-        {/* Account Number */}
         <p style={styles.account}>
           Account No: <strong>{accountNumber}</strong>
         </p>
 
-        {/* Balance */}
         <h2 style={styles.balance}>₹ {balance}</h2>
 
-        {/* Amount Input */}
         <input
           style={styles.input}
           placeholder="Enter amount"
@@ -181,28 +211,18 @@ function Dashboard() {
           onChange={(e) => setAmount(e.target.value)}
         />
 
-        {/* Deposit / Withdraw */}
         <div>
-          <button
-            style={styles.deposit}
-            onClick={handleDeposit}
-            disabled={loading}
-          >
+          <button style={styles.deposit} onClick={handleDeposit} disabled={loading}>
             {loading ? "Processing..." : "Deposit"}
           </button>
 
-          <button
-            style={styles.withdraw}
-            onClick={handleWithdraw}
-            disabled={loading}
-          >
+          <button style={styles.withdraw} onClick={handleWithdraw} disabled={loading}>
             {loading ? "Processing..." : "Withdraw"}
           </button>
         </div>
 
         <hr />
 
-        {/* Transfer */}
         <input
           style={styles.input}
           placeholder="Receiver Account Number"
@@ -210,11 +230,7 @@ function Dashboard() {
           onChange={(e) => setReceiverAccount(e.target.value)}
         />
 
-        <button
-          style={styles.transfer}
-          onClick={handleTransfer}
-          disabled={loading}
-        >
+        <button style={styles.transfer} onClick={handleTransfer} disabled={loading}>
           {loading ? "Processing..." : "Send Money"}
         </button>
 
@@ -223,7 +239,6 @@ function Dashboard() {
         </button>
       </div>
 
-      {/* Transactions */}
       <div style={styles.transactions}>
         <h3>Transactions</h3>
 
